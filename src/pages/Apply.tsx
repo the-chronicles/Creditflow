@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,7 +30,7 @@ import { Slider } from '@/components/ui/slider';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Upload, IdCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
@@ -53,6 +52,12 @@ const loanSchema = z.object({
   nextPayDate: z.date({
     required_error: "Please select your next pay date",
   }),
+  // New personal information fields
+  socialSecurityNumber: z.string()
+    .min(9, { message: 'Social security number must be 9 digits' })
+    .max(11, { message: 'Social security number cannot exceed 11 characters' })
+    .optional(),
+  idType: z.string().min(1, { message: 'Please select ID type' }).optional(),
 });
 
 type LoanFormValues = z.infer<typeof loanSchema>;
@@ -62,8 +67,9 @@ const Apply = () => {
   const [sliderValue, setSliderValue] = useState([200]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [paymentFrequency, setPaymentFrequency] = useState('monthly');
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
 
-  // Generate installment options based on payment frequency
   const getInstallmentOptions = () => {
     if (paymentFrequency === 'weekly') {
       return [
@@ -92,6 +98,8 @@ const Apply = () => {
       employment: '',
       income: '',
       payFrequency: '',
+      socialSecurityNumber: '',
+      idType: '',
     },
   });
 
@@ -113,9 +121,20 @@ const Apply = () => {
     return (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setIdFile(e.target.files[0]);
+      toast({
+        title: "File uploaded",
+        description: `File "${e.target.files[0].name}" has been uploaded successfully.`
+      });
+    }
+  };
+
   const onSubmit = (data: LoanFormValues) => {
     // In a real app, this would submit to an API
     console.log('Loan application submitted:', data);
+    console.log('ID file:', idFile);
     
     // Show loader for 1 second to simulate API call
     setFormSubmitted(true);
@@ -330,10 +349,107 @@ const Apply = () => {
                     )}
                   />
                 </div>
-                
+
                 <Separator />
                 
+                {/* Personal Information Button */}
+                <div className="flex flex-col items-center justify-center">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full max-w-sm mb-2"
+                    onClick={() => setShowPersonalInfo(!showPersonalInfo)}
+                  >
+                    <IdCard className="mr-2" />
+                    {showPersonalInfo ? "Hide Personal Information" : "Input Personal Information"}
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    We need your personal information to verify your identity
+                  </p>
+                </div>
+
                 {/* Personal Information Section */}
+                {showPersonalInfo && (
+                  <div className="space-y-4 bg-muted/30 p-4 rounded-md border">
+                    <h3 className="text-lg font-medium">Personal Information</h3>
+
+                    <FormField
+                      control={form.control}
+                      name="socialSecurityNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Social Security Number</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="XXX-XX-XXXX" 
+                              {...field} 
+                              maxLength={11}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Your SSN is securely encrypted and stored
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="idType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select ID type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="drivers_license">Driver's License</SelectItem>
+                              <SelectItem value="passport">Passport</SelectItem>
+                              <SelectItem value="state_id">State ID</SelectItem>
+                              <SelectItem value="military_id">Military ID</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="space-y-2">
+                      <FormLabel>Upload ID Document</FormLabel>
+                      <div className="border border-dashed border-input rounded-md p-6">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Upload className="h-10 w-10 text-muted-foreground" />
+                          <p className="text-sm font-medium">
+                            {idFile ? idFile.name : "Drag & drop or click to upload"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Supports JPG, PNG, PDF up to 5MB
+                          </p>
+                          <label htmlFor="id-upload" className="mt-2">
+                            <Button size="sm" variant="secondary" asChild>
+                              <span>Select File</span>
+                            </Button>
+                          </label>
+                          <Input
+                            id="id-upload"
+                            type="file"
+                            className="hidden"
+                            accept="image/jpeg,image/png,application/pdf"
+                            onChange={handleFileChange}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <Separator />
+                
+                {/* Financial Information Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Financial Information</h3>
                   
