@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,7 +30,7 @@ import { Slider } from '@/components/ui/slider';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, IdCard, Camera } from 'lucide-react';
+import { CalendarIcon, Upload, IdCard, Camera, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -60,6 +59,16 @@ const loanSchema = z.object({
     .max(11, { message: 'Social security number cannot exceed 11 characters' })
     .optional(),
   idType: z.string().min(1, { message: 'Please select ID type' }).optional(),
+  // New banking information fields
+  accountType: z.string().min(1, { message: 'Please select account type' }).optional(),
+  routingNumber: z.string()
+    .min(9, { message: 'Routing number must be 9 digits' })
+    .max(9, { message: 'Routing number must be 9 digits' })
+    .optional(),
+  accountNumber: z.string()
+    .min(4, { message: 'Account number must be at least 4 digits' })
+    .max(17, { message: 'Account number cannot exceed 17 digits' })
+    .optional(),
 });
 
 type LoanFormValues = z.infer<typeof loanSchema>;
@@ -71,6 +80,7 @@ const Apply = () => {
   const [paymentFrequency, setPaymentFrequency] = useState('monthly');
   const [idFile, setIdFile] = useState<File | null>(null);
   const [showPersonalInfo, setShowPersonalInfo] = useState(false);
+  const [showBankingInfo, setShowBankingInfo] = useState(false);
   const [useCameraMode, setUseCameraMode] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -106,6 +116,9 @@ const Apply = () => {
       payFrequency: '',
       socialSecurityNumber: '',
       idType: '',
+      accountType: '',
+      routingNumber: '',
+      accountNumber: '',
     },
   });
 
@@ -580,6 +593,97 @@ const Apply = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                <Separator />
+                
+                {/* Banking Information Button */}
+                <div className="flex flex-col items-center justify-center">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full max-w-sm mb-2"
+                    onClick={() => setShowBankingInfo(!showBankingInfo)}
+                  >
+                    <CreditCard className="mr-2" />
+                    {showBankingInfo ? "Hide Banking Information" : "Input Banking Information"}
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    We need your banking details for loan disbursement and payments
+                  </p>
+                </div>
+
+                {/* Banking Information Section */}
+                {showBankingInfo && (
+                  <div className="space-y-4 bg-muted/30 p-4 rounded-md border">
+                    <h3 className="text-lg font-medium">Banking Information</h3>
+
+                    <FormField
+                      control={form.control}
+                      name="accountType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Account Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select account type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="checking">Checking Account</SelectItem>
+                              <SelectItem value="savings">Savings Account</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="routingNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Routing Number</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="9-digit routing number" 
+                              {...field} 
+                              maxLength={9}
+                              type="password"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            The 9-digit number on the bottom left of your check
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="accountNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Account Number</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Your account number" 
+                              {...field} 
+                              maxLength={17}
+                              type="password"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Your account number is securely encrypted
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 )}
 
