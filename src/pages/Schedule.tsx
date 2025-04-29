@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Calendar, Phone, MessageSquare } from 'lucide-react';
 import { 
   Dialog,
@@ -12,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Schedule = () => {
@@ -43,15 +43,8 @@ const Schedule = () => {
           <p className="text-muted-foreground">View your upcoming loan payments</p>
         </div>
 
-        <div className="flex justify-between items-center">
+        <div>
           <h2 className="text-xl font-semibold tracking-tight">Upcoming Payments</h2>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setPaymentDialogOpen(true)}
-          >
-            Make a Payment
-          </Button>
         </div>
 
         {/* Payment schedule list */}
