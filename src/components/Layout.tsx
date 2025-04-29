@@ -126,8 +126,8 @@ function AppSidebar({ onLogout, username }: AppSidebarProps) {
       <SidebarFooter>
         <div className="px-3">
           <Button 
-            variant="sidebar-secondary" 
-            className="w-full flex items-center gap-3 mb-2" 
+            variant="ghost" 
+            className="w-full flex items-center gap-3 mb-2 bg-sidebar-accent hover:bg-sidebar-primary text-sidebar-foreground" 
             onClick={onLogout}
           >
             <LogOut className="h-4 w-4" />
