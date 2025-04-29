@@ -12,6 +12,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Apply from "./pages/Apply";
 import Loans from "./pages/Loans";
+import Schedule from "./pages/Schedule";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,7 +67,7 @@ const App = () => (
               path="/schedule" 
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Schedule />
                 </ProtectedRoute>
               } 
             />
