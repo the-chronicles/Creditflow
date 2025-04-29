@@ -4,7 +4,9 @@ import { Layout } from '@/components/Layout';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Form,
   FormControl,
@@ -28,6 +30,9 @@ import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const loanSchema = z.object({
   loanType: z.string().min(1, { message: 'Please select a loan type' }),
@@ -42,6 +47,10 @@ const loanSchema = z.object({
     const num = parseFloat(val);
     return !isNaN(num) && num > 0;
   }, { message: 'Please enter a valid income amount' }),
+  payFrequency: z.string().min(1, { message: 'Please select your pay frequency' }),
+  nextPayDate: z.date({
+    required_error: "Please select your next pay date",
+  }),
 });
 
 type LoanFormValues = z.infer<typeof loanSchema>;
@@ -60,6 +69,7 @@ const Apply = () => {
       purpose: '',
       employment: '',
       income: '',
+      payFrequency: '',
     },
   });
 
@@ -284,6 +294,77 @@ const Apply = () => {
                             />
                           </div>
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="payFrequency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Frequency</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select how often you get paid" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                            <SelectItem value="semimonthly">Semi-monthly (Twice a month)</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          How frequently you receive your paycheck
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="nextPayDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Next Pay Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Select your next pay date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date < new Date()}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormDescription>
+                          When you expect to receive your next paycheck
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
