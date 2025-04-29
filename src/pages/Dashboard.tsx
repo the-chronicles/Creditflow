@@ -1,11 +1,20 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { CreditCard, Calendar, ArrowRight, Wallet } from 'lucide-react';
+import { CreditCard, Calendar, ArrowRight, Wallet, Phone, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Mock data for the dashboard
 const mockLoans = [
@@ -34,6 +43,7 @@ const mockLoans = [
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
   const totalOutstanding = mockLoans.reduce((total, loan) => total + loan.remainingAmount, 0);
   const nextPaymentTotal = mockLoans.reduce((total, loan) => total + loan.nextPaymentAmount, 0);
@@ -86,13 +96,72 @@ const Dashboard = () => {
                 variant="outline" 
                 size="sm" 
                 className="w-full bg-primary-foreground/10 text-primary-foreground border-primary-foreground/20"
-                onClick={() => navigate('/payments')}
+                onClick={() => setPaymentDialogOpen(true)}
               >
                 Make a Payment
               </Button>
             </CardContent>
           </Card>
         </div>
+
+        {/* Payment Dialog */}
+        <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Make a Payment</DialogTitle>
+              <DialogDescription>
+                Contact us to make a payment on your loan.
+              </DialogDescription>
+            </DialogHeader>
+            <Tabs defaultValue="call" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="call">Call Us</TabsTrigger>
+                <TabsTrigger value="text">Text Us</TabsTrigger>
+              </TabsList>
+              <TabsContent value="call" className="space-y-4">
+                <div className="text-center py-4">
+                  <Phone className="mx-auto h-12 w-12 text-primary mb-3" />
+                  <p className="mb-2">Call us at:</p>
+                  <a 
+                    href="tel:+18005551234" 
+                    className="text-xl font-bold text-primary block mb-3"
+                  >
+                    1-800-555-1234
+                  </a>
+                  <p className="text-sm text-muted-foreground">
+                    Our representatives are available Monday-Friday, 8am-8pm ET
+                  </p>
+                </div>
+                <p className="text-sm text-center border-t border-border pt-4">
+                  Please have your loan number and payment amount ready
+                </p>
+              </TabsContent>
+              <TabsContent value="text" className="space-y-4">
+                <div className="text-center py-4">
+                  <MessageSquare className="mx-auto h-12 w-12 text-primary mb-3" />
+                  <p className="mb-2">Text us at:</p>
+                  <a 
+                    href="sms:+18005551234" 
+                    className="text-xl font-bold text-primary block mb-3"
+                  >
+                    1-800-555-1234
+                  </a>
+                  <p className="text-sm text-muted-foreground">
+                    Please include your full name, loan number, and payment amount
+                  </p>
+                </div>
+                <p className="text-sm text-center border-t border-border pt-4">
+                  Standard message and data rates may apply
+                </p>
+              </TabsContent>
+            </Tabs>
+            <DialogFooter className="sm:justify-start">
+              <Button variant="ghost" onClick={() => setPaymentDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Active Loans */}
         <div>
