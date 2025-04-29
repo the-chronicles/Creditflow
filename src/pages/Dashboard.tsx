@@ -123,10 +123,10 @@ const Dashboard = () => {
                   <Phone className="mx-auto h-12 w-12 text-primary mb-3" />
                   <p className="mb-2">Call us at:</p>
                   <a 
-                    href="tel:+18005551234" 
+                    href="tel:+18777284195" 
                     className="text-xl font-bold text-primary block mb-3"
                   >
-                    1-800-555-1234
+                    1-877-728-4195
                   </a>
                   <p className="text-sm text-muted-foreground">
                     Our representatives are available Monday-Friday, 8am-8pm ET
@@ -141,10 +141,10 @@ const Dashboard = () => {
                   <MessageSquare className="mx-auto h-12 w-12 text-primary mb-3" />
                   <p className="mb-2">Text us at:</p>
                   <a 
-                    href="sms:+18005551234" 
+                    href="sms:+18777284195" 
                     className="text-xl font-bold text-primary block mb-3"
                   >
-                    1-800-555-1234
+                    1-877-728-4195
                   </a>
                   <p className="text-sm text-muted-foreground">
                     Please include your full name, loan number, and payment amount
