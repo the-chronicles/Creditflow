@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -30,9 +31,10 @@ import { Slider } from '@/components/ui/slider';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, IdCard } from 'lucide-react';
+import { CalendarIcon, Upload, IdCard, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const loanSchema = z.object({
   loanType: z.string().min(1, { message: 'Please select a loan type' }),
@@ -69,6 +71,10 @@ const Apply = () => {
   const [paymentFrequency, setPaymentFrequency] = useState('monthly');
   const [idFile, setIdFile] = useState<File | null>(null);
   const [showPersonalInfo, setShowPersonalInfo] = useState(false);
+  const [useCameraMode, setUseCameraMode] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isMobile = useIsMobile();
 
   const getInstallmentOptions = () => {
     if (paymentFrequency === 'weekly') {
@@ -131,6 +137,84 @@ const Apply = () => {
     }
   };
 
+  // Function to start camera
+  const startCamera = async () => {
+    try {
+      setUseCameraMode(true);
+      
+      // Wait for component to render with video element
+      setTimeout(async () => {
+        if (videoRef.current) {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              facingMode: 'environment' // Use the back camera if available
+            } 
+          });
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+      
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      toast({
+        title: "Camera access error",
+        description: "Could not access your camera. Please check permissions.",
+        variant: "destructive"
+      });
+      setUseCameraMode(false);
+    }
+  };
+
+  // Function to take picture
+  const takePicture = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      
+      // Set canvas dimensions to match video feed
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw the current video frame to canvas
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas to file
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], "id-document.jpg", { type: "image/jpeg" });
+            setIdFile(file);
+            
+            // Stop camera stream
+            const stream = video.srcObject as MediaStream;
+            if (stream) {
+              stream.getTracks().forEach(track => track.stop());
+            }
+            
+            setUseCameraMode(false);
+            
+            toast({
+              title: "Photo captured",
+              description: "Your ID document photo has been captured successfully."
+            });
+          }
+        }, 'image/jpeg', 0.95);
+      }
+    }
+  };
+
+  // Function to cancel camera mode
+  const cancelCamera = () => {
+    if (videoRef.current) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    }
+    setUseCameraMode(false);
+  };
+
   const onSubmit = (data: LoanFormValues) => {
     // In a real app, this would submit to an API
     console.log('Loan application submitted:', data);
@@ -174,6 +258,43 @@ const Apply = () => {
             </CardHeader>
             <CardContent className="flex justify-center py-6">
               <div className="h-8 w-8 rounded-full border-4 border-primary/30 border-t-primary animate-spin"></div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Camera mode UI
+  if (useCameraMode) {
+    return (
+      <Layout>
+        <div className="max-w-3xl mx-auto animate-fade-in">
+          <h1 className="text-3xl font-bold mb-2">Take Photo of ID</h1>
+          <p className="text-muted-foreground mb-6">Position your ID document in the frame and take a photo</p>
+          
+          <Card>
+            <CardContent className="p-4 flex flex-col items-center">
+              <div className="relative w-full border border-input rounded-md overflow-hidden mb-4">
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  className="w-full h-auto" 
+                />
+              </div>
+              
+              <canvas ref={canvasRef} className="hidden" />
+              
+              <div className="flex gap-4 justify-center w-full mt-4">
+                <Button variant="outline" onClick={cancelCamera}>
+                  Cancel
+                </Button>
+                <Button onClick={takePicture}>
+                  <Camera className="mr-2" />
+                  Take Photo
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -429,18 +550,33 @@ const Apply = () => {
                           <p className="text-xs text-muted-foreground">
                             Supports JPG, PNG, PDF up to 5MB
                           </p>
-                          <label htmlFor="id-upload" className="mt-2">
-                            <Button size="sm" variant="secondary" asChild>
-                              <span>Select File</span>
-                            </Button>
-                          </label>
-                          <Input
-                            id="id-upload"
-                            type="file"
-                            className="hidden"
-                            accept="image/jpeg,image/png,application/pdf"
-                            onChange={handleFileChange}
-                          />
+                          
+                          <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                            <label htmlFor="id-upload" className="w-full sm:w-auto">
+                              <Button size="sm" variant="secondary" asChild>
+                                <span>Select File</span>
+                              </Button>
+                              <Input
+                                id="id-upload"
+                                type="file"
+                                className="hidden"
+                                accept="image/jpeg,image/png,application/pdf"
+                                onChange={handleFileChange}
+                              />
+                            </label>
+                            
+                            {isMobile && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                type="button"
+                                onClick={startCamera}
+                              >
+                                <Camera className="mr-2 h-4 w-4" />
+                                Take Photo
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
