@@ -33,14 +33,16 @@ import { toast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const loanSchema = z.object({
   loanType: z.string().min(1, { message: 'Please select a loan type' }),
   amount: z.string().refine((val) => {
     const num = parseFloat(val);
-    return !isNaN(num) && num > 0 && num <= 100000;
-  }, { message: 'Amount must be between $1 and $100,000' }),
-  term: z.string(),
+    return !isNaN(num) && num >= 50 && num <= 500;
+  }, { message: 'Amount must be between $50 and $500' }),
+  paymentFrequency: z.string().min(1, { message: 'Please select payment frequency' }),
+  installments: z.string().min(1, { message: 'Please select number of installments' }),
   purpose: z.string().min(3, { message: 'Please provide the purpose of the loan' }).max(500),
   employment: z.string().min(1, { message: 'Please select your employment status' }),
   income: z.string().refine((val) => {
@@ -57,15 +59,35 @@ type LoanFormValues = z.infer<typeof loanSchema>;
 
 const Apply = () => {
   const navigate = useNavigate();
-  const [sliderValue, setSliderValue] = useState([5000]);
+  const [sliderValue, setSliderValue] = useState([200]);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [paymentFrequency, setPaymentFrequency] = useState('monthly');
+
+  // Generate installment options based on payment frequency
+  const getInstallmentOptions = () => {
+    if (paymentFrequency === 'weekly') {
+      return [
+        { value: '4', label: '4 weeks (1 month)' },
+        { value: '8', label: '8 weeks (2 months)' },
+        { value: '12', label: '12 weeks (3 months)' },
+      ];
+    } else {
+      return [
+        { value: '1', label: '1 month' },
+        { value: '2', label: '2 months' },
+        { value: '3', label: '3 months' },
+        { value: '6', label: '6 months' },
+      ];
+    }
+  };
 
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanSchema),
     defaultValues: {
       loanType: '',
-      amount: '5000',
-      term: '36',
+      amount: '200',
+      paymentFrequency: 'monthly',
+      installments: '',
       purpose: '',
       employment: '',
       income: '',
@@ -78,9 +100,16 @@ const Apply = () => {
     form.setValue('amount', value[0].toString(), { shouldValidate: true });
   };
 
-  const calculateMonthlyPayment = (amount: number, term: number, interestRate = 0.089) => {
+  const handlePaymentFrequencyChange = (value: string) => {
+    setPaymentFrequency(value);
+    form.setValue('paymentFrequency', value, { shouldValidate: true });
+    // Reset installments when payment frequency changes
+    form.setValue('installments', '', { shouldValidate: true });
+  };
+
+  const calculateMonthlyPayment = (amount: number, installments: number, interestRate = 0.089) => {
     const r = interestRate / 12;
-    const n = term;
+    const n = installments;
     return (amount * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
   };
 
@@ -101,8 +130,19 @@ const Apply = () => {
   };
 
   const amount = parseFloat(form.watch('amount') || '0');
-  const term = parseInt(form.watch('term') || '36');
-  const monthlyPayment = calculateMonthlyPayment(amount, term);
+  const installments = parseInt(form.watch('installments') || '1');
+  const currentPaymentFrequency = form.watch('paymentFrequency');
+  
+  // Calculate payment amount based on frequency and installments
+  const calculatePaymentAmount = () => {
+    if (!installments || isNaN(installments)) return 0;
+    
+    const totalWithInterest = amount * 1.089; // Simple interest calculation
+    const paymentAmount = totalWithInterest / installments;
+    return paymentAmount;
+  };
+
+  const paymentAmount = calculatePaymentAmount();
   
   if (formSubmitted) {
     return (
@@ -176,13 +216,13 @@ const Apply = () => {
                             <Slider 
                               value={sliderValue} 
                               onValueChange={handleSliderChange} 
-                              min={1000}
-                              max={100000}
-                              step={500}
+                              min={50}
+                              max={500}
+                              step={10}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>$1,000</span>
-                              <span>$100,000</span>
+                              <span>$50</span>
+                              <span>$500</span>
                             </div>
                             <Input
                               type="number"
@@ -199,27 +239,71 @@ const Apply = () => {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="paymentFrequency"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Payment Frequency</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              handlePaymentFrequencyChange(value);
+                            }}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-1"
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="weekly" />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                Weekly Payments
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="monthly" />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                Monthly Payments
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   
                   <FormField
                     control={form.control}
-                    name="term"
+                    name="installments"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Loan Term (months)</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormLabel>Number of Installments</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a loan term" />
+                              <SelectValue placeholder="Select number of installments" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="12">12 months (1 year)</SelectItem>
-                            <SelectItem value="24">24 months (2 years)</SelectItem>
-                            <SelectItem value="36">36 months (3 years)</SelectItem>
-                            <SelectItem value="48">48 months (4 years)</SelectItem>
-                            <SelectItem value="60">60 months (5 years)</SelectItem>
+                            {getInstallmentOptions().map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        <FormDescription>
+                          Choose how many payments you want to make
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -377,21 +461,30 @@ const Apply = () => {
                 <div className="p-4 bg-muted rounded-md space-y-2">
                   <h3 className="font-medium mb-2">Loan Summary</h3>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="text-muted-foreground">Amount:</div>
+                    <div className="text-muted-foreground">Loan Amount:</div>
                     <div className="font-medium text-right">${amount.toLocaleString()}</div>
                     
-                    <div className="text-muted-foreground">Term:</div>
-                    <div className="font-medium text-right">{term} months</div>
+                    <div className="text-muted-foreground">Payment Frequency:</div>
+                    <div className="font-medium text-right">
+                      {currentPaymentFrequency === 'weekly' ? 'Weekly' : 'Monthly'}
+                    </div>
+                    
+                    <div className="text-muted-foreground">Number of Payments:</div>
+                    <div className="font-medium text-right">{installments || '-'}</div>
                     
                     <div className="text-muted-foreground">Interest Rate:</div>
                     <div className="font-medium text-right">8.9%</div>
                     
-                    <div className="text-muted-foreground">Monthly Payment:</div>
-                    <div className="font-medium text-right">${isNaN(monthlyPayment) ? '0.00' : monthlyPayment.toFixed(2)}</div>
+                    <div className="text-muted-foreground">
+                      {currentPaymentFrequency === 'weekly' ? 'Weekly' : 'Monthly'} Payment:
+                    </div>
+                    <div className="font-medium text-right">
+                      ${paymentAmount ? paymentAmount.toFixed(2) : '0.00'}
+                    </div>
                     
                     <div className="text-muted-foreground">Total Repayment:</div>
                     <div className="font-medium text-right">
-                      ${isNaN(monthlyPayment) ? '0.00' : (monthlyPayment * term).toFixed(2)}
+                      ${paymentAmount && installments ? (paymentAmount * installments).toFixed(2) : '0.00'}
                     </div>
                   </div>
                 </div>
