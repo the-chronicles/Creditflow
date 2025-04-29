@@ -30,10 +30,11 @@ import { Slider } from '@/components/ui/slider';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, IdCard, Camera, CreditCard } from 'lucide-react';
+import { CalendarIcon, Upload, IdCard, Camera, CreditCard, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const loanSchema = z.object({
   loanType: z.string().min(1, { message: 'Please select a loan type' }),
@@ -53,13 +54,20 @@ const loanSchema = z.object({
   nextPayDate: z.date({
     required_error: "Please select your next pay date",
   }),
-  // New personal information fields
+  
+  // New direct deposit field
+  hasDirectDeposit: z.boolean({
+    required_error: "Please indicate if you have direct deposit",
+  }),
+
+  // Personal information fields
   socialSecurityNumber: z.string()
     .min(9, { message: 'Social security number must be 9 digits' })
     .max(11, { message: 'Social security number cannot exceed 11 characters' })
     .optional(),
   idType: z.string().min(1, { message: 'Please select ID type' }).optional(),
-  // New banking information fields
+
+  // Banking information fields
   accountType: z.string().min(1, { message: 'Please select account type' }).optional(),
   routingNumber: z.string()
     .min(9, { message: 'Routing number must be 9 digits' })
@@ -82,6 +90,7 @@ const Apply = () => {
   const [showPersonalInfo, setShowPersonalInfo] = useState(false);
   const [showBankingInfo, setShowBankingInfo] = useState(false);
   const [useCameraMode, setUseCameraMode] = useState(false);
+  const [directDepositRejected, setDirectDepositRejected] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isMobile = useIsMobile();
@@ -119,6 +128,7 @@ const Apply = () => {
       accountType: '',
       routingNumber: '',
       accountNumber: '',
+      hasDirectDeposit: false, // Default to false
     },
   });
 
@@ -228,7 +238,20 @@ const Apply = () => {
     setUseCameraMode(false);
   };
 
+  const handleDirectDepositChange = (checked: boolean) => {
+    if (!checked) {
+      setDirectDepositRejected(true);
+    } else {
+      setDirectDepositRejected(false);
+    }
+  };
+
   const onSubmit = (data: LoanFormValues) => {
+    if (!data.hasDirectDeposit) {
+      setDirectDepositRejected(true);
+      return;
+    }
+    
     // In a real app, this would submit to an API
     console.log('Loan application submitted:', data);
     console.log('ID file:', idFile);
@@ -259,6 +282,33 @@ const Apply = () => {
   };
 
   const paymentAmount = calculatePaymentAmount();
+  
+  if (directDepositRejected) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center h-[70vh]">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
+              <CardTitle className="mt-4">Direct Deposit Required</CardTitle>
+              <CardDescription className="mt-2">
+                We're sorry, but direct deposit is required for loan applications. 
+                Without direct deposit, we cannot process your loan application at this time.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center pt-4 pb-6">
+              <Button onClick={() => {
+                setDirectDepositRejected(false);
+                navigate('/dashboard');
+              }}>
+                Return to Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
   
   if (formSubmitted) {
     return (
@@ -329,6 +379,35 @@ const Apply = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Direct Deposit Question - NEW */}
+                <div className="bg-muted/40 p-4 rounded-md border border-amber-200">
+                  <FormField
+                    control={form.control}
+                    name="hasDirectDeposit"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-2">
+                        <FormControl>
+                          <Checkbox 
+                            checked={field.value} 
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              handleDirectDepositChange(checked === true);
+                            }} 
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="font-medium">
+                            Do you have direct deposit?
+                          </FormLabel>
+                          <FormDescription>
+                            Direct deposit is required for loan approval
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* Loan Details Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Loan Details</h3>
