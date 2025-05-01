@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Checkbox } from '@/components/ui/checkbox';
+import { applyForLoan } from '@/api/loan';
 
 const loanSchema = z.object({
   loanType: z.string().min(1, { message: 'Please select a loan type' }),
@@ -246,26 +247,38 @@ const Apply = () => {
     }
   };
 
-  const onSubmit = (data: LoanFormValues) => {
+  const onSubmit = async (data: LoanFormValues) => {
     if (!data.hasDirectDeposit) {
       setDirectDepositRejected(true);
       return;
     }
-    
-    // In a real app, this would submit to an API
-    console.log('Loan application submitted:', data);
-    console.log('ID file:', idFile);
-    
-    // Show loader for 1 second to simulate API call
-    setFormSubmitted(true);
-    
-    setTimeout(() => {
+  
+    try {
+      setFormSubmitted(true);
+      
+      // Submit the loan application
+      const loanData = {
+        ...data,
+        amount: parseFloat(data.amount),
+        installments: parseInt(data.installments),
+        // No need to convert nextPayDate as it's already a Date object
+      };
+  
+      const response = await applyForLoan(loanData, idFile);
+      
       toast({
         title: "Application submitted!",
         description: "We'll review your loan application and get back to you shortly."
       });
       navigate('/dashboard');
-    }, 1500);
+    } catch (error) {
+      setFormSubmitted(false);
+      toast({
+        title: "Application failed",
+        description: error.message || "There was an error submitting your application",
+        variant: "destructive"
+      });
+    }
   };
 
   const amount = parseFloat(form.watch('amount') || '0');
