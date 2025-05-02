@@ -37,33 +37,58 @@ export const applyForLoan = async (formData, idFile) => {
   }
 };
 
+// export const getMyLoans = async () => {
+//   try {
+//     // Fixed typo here: '/loas/my-loans' → '/loan/my-loans'
+//     const response = await api.get('/loan/my-loans');
+//     const allLoans = response.data;
+    
+//     // Improved filtering with null checks
+//     const activeLoans = allLoans.filter(loan => 
+//       loan?.status && (loan.status === 'approved' || loan.status === 'paid')
+//     );
+    
+//     const pastLoans = allLoans.filter(loan => 
+//       loan?.status && (loan.status === 'completed' || loan.status === 'rejected')
+//     );
+
+//     return { activeLoans, pastLoans };
+//   } catch (error) {
+//     console.error('Error fetching loans:', {
+//       message: error.message,
+//       url: error.config?.url,
+//       status: error.response?.status,
+//       data: error.response?.data
+//     });
+//     throw error.response?.data || { 
+//       message: error.message || 'Failed to fetch loans' 
+//     };
+    
+//   }
+// };
+
 export const getMyLoans = async () => {
   try {
-    // Fixed typo here: '/loas/my-loans' → '/loan/my-loans'
     const response = await api.get('/loan/my-loans');
     const allLoans = response.data;
     
-    // Improved filtering with null checks
-    const activeLoans = allLoans.filter(loan => 
-      loan?.status && (loan.status === 'approved' || loan.status === 'paid')
-    );
-    
-    const pastLoans = allLoans.filter(loan => 
-      loan?.status && (loan.status === 'completed' || loan.status === 'rejected')
-    );
-
-    return { activeLoans, pastLoans };
-  } catch (error) {
-    console.error('Error fetching loans:', {
-      message: error.message,
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data
-    });
-    throw error.response?.data || { 
-      message: error.message || 'Failed to fetch loans' 
+    return {
+      pendingLoans: allLoans.filter(loan => loan?.status === 'pending'),
+      activeLoans: allLoans.filter(loan => 
+        ['approved', 'paid'].includes(loan?.status)
+      ),
+      pastLoans: allLoans.filter(loan => 
+        ['completed', 'rejected'].includes(loan?.status)
+      )
     };
-    
+  } catch (error) {
+    console.error('Error fetching loans:', error);
+    // Return empty arrays if error occurs
+    return { 
+      pendingLoans: [], 
+      activeLoans: [], 
+      pastLoans: [] 
+    };
   }
 };
 

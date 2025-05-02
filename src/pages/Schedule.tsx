@@ -1,7 +1,6 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Phone, MessageSquare } from 'lucide-react';
 import { 
   Dialog,
@@ -13,27 +12,19 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getMyRepayments } from '@/api/repayment';
 
 const Schedule = () => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  
-  // Mock data for upcoming payments
-  const upcomingPayments = [
-    {
-      id: '1',
-      loanId: 'L10001',
-      amount: 250,
-      dueDate: '2025-05-15',
-      status: 'upcoming',
-    },
-    {
-      id: '2',
-      loanId: 'L10002',
-      amount: 500,
-      dueDate: '2025-05-20',
-      status: 'upcoming',
-    },
-  ];
+  const [repayments, setRepayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMyRepayments()
+      .then(data => setRepayments(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <Layout>
@@ -47,33 +38,43 @@ const Schedule = () => {
           <h2 className="text-xl font-semibold tracking-tight">Upcoming Payments</h2>
         </div>
 
-        {/* Payment schedule list */}
+        {/* Loading & Empty States */}
+        {loading && <p>Loading...</p>}
+        {!loading && repayments.length === 0 && (
+          <p className="text-muted-foreground">You have no upcoming payments.</p>
+        )}
+
+        {/* Repayment Cards */}
         <div className="space-y-4">
-          {upcomingPayments.map((payment) => (
-            <Card key={payment.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-medium">Loan #{payment.loanId}</h3>
-                    <p className="text-muted-foreground">Due on {new Date(payment.dueDate).toLocaleDateString()}</p>
+          {repayments
+            .filter((r) => r.status === 'unpaid') // show only unpaid
+            .map((payment) => (
+              <Card key={payment._id}>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium">Loan #{payment.loanId}</h3>
+                      <p className="text-muted-foreground">
+                        Due on {new Date(payment.dueDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold">${payment.amountPaid.toLocaleString()}</p>
+                      <Button 
+                        className="mt-2"
+                        size="sm" 
+                        onClick={() => setPaymentDialogOpen(true)}
+                      >
+                        Pay Now
+                      </Button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold">${payment.amount.toLocaleString()}</p>
-                    <Button 
-                      className="mt-2"
-                      size="sm" 
-                      onClick={() => setPaymentDialogOpen(true)}
-                    >
-                      Pay Now
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
         </div>
 
-        {/* Payment Dialog - Same as in Dashboard */}
+        {/* Payment Dialog */}
         <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
