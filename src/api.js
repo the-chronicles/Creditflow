@@ -45,7 +45,6 @@ const apiFormData = axios.create({
 });
 
 // Request interceptor for both instances
-// Request interceptor for both instances
 const attachToken = (config) => {
   const token = localStorage.getItem('userToken');
   if (token) {
