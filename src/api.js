@@ -1,30 +1,3 @@
-
-// // src/api.js
-// import axios from 'axios';
-
-// const api = axios.create({
-//   baseURL: 'https://cash-flow-be.onrender.com/api', // Adjust path if needed
-//   headers: {
-//     'Content-Type': 'application/json',
-//   },
-// });
-
-
-
-// // Automatically attach token for authenticated routes
-// api.interceptors.request.use((config) => {
-//   const token = localStorage.getItem('userToken');
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`;
-//   }
-//   return config;
-// });
-
-// export default api;
-
-
-
-
 // src/api.js
 import axios from 'axios';
 

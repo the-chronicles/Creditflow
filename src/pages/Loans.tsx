@@ -15,6 +15,7 @@ import { getMyLoans } from "@/api/loan";
 import { Loan } from "@/api/loan";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+import { useSocket } from "@/context/SocketContext";
 
 const Loans = () => {
   const [activeLoans, setActiveLoans] = useState<Loan[]>([]);
@@ -22,6 +23,7 @@ const Loans = () => {
   const [loading, setLoading] = useState(true);
   const [pendingLoans, setPendingLoans] = useState<Loan[]>([]);
   const navigate = useNavigate();
+  // const { socket } = useSocket();
 
   useEffect(() => {
     const fetchLoans = async () => {
@@ -43,7 +45,48 @@ const Loans = () => {
     };
 
     fetchLoans();
+
+  //   // Poll every 30 seconds for updates
+  // const interval = setInterval(fetchLoans, 30000);
+  
+  // return () => clearInterval(interval);
   }, []);
+
+
+  // useEffect(() => {
+  //   const fetchLoans = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const { pendingLoans, activeLoans, pastLoans } = await getMyLoans();
+  //       setPendingLoans(pendingLoans);
+  //       setActiveLoans(activeLoans);
+  //       setPastLoans(pastLoans);
+  //     } catch (error) {
+  //       console.error("Error loading loans:", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchLoans();
+
+  //   // Set up real-time updates if using websockets
+  //   if (socket) {
+  //     socket.on('loanUpdate', (updatedLoan: Loan) => {
+  //       setPendingLoans(prev => prev.filter(loan => loan._id !== updatedLoan._id));
+        
+  //       if (updatedLoan.status === 'approved') {
+  //         setActiveLoans(prev => [...prev, updatedLoan]);
+  //       } else if (updatedLoan.status === 'rejected') {
+  //         setPastLoans(prev => [...prev, updatedLoan]);
+  //       }
+  //     });
+  //   }
+
+  //   return () => {
+  //     if (socket) socket.off('loanUpdate');
+  //   };
+  // }, [socket]);
 
   if (loading) {
     return (
