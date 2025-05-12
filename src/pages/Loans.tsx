@@ -46,12 +46,11 @@ const Loans = () => {
 
     fetchLoans();
 
-  //   // Poll every 30 seconds for updates
-  // const interval = setInterval(fetchLoans, 30000);
-  
-  // return () => clearInterval(interval);
-  }, []);
+    //   // Poll every 30 seconds for updates
+    // const interval = setInterval(fetchLoans, 30000);
 
+    // return () => clearInterval(interval);
+  }, []);
 
   // useEffect(() => {
   //   const fetchLoans = async () => {
@@ -74,7 +73,7 @@ const Loans = () => {
   //   if (socket) {
   //     socket.on('loanUpdate', (updatedLoan: Loan) => {
   //       setPendingLoans(prev => prev.filter(loan => loan._id !== updatedLoan._id));
-        
+
   //       if (updatedLoan.status === 'approved') {
   //         setActiveLoans(prev => [...prev, updatedLoan]);
   //       } else if (updatedLoan.status === 'rejected') {
@@ -185,7 +184,11 @@ const Loans = () => {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/loan/${loan._id}`)}
+                    >
                       View Application
                     </Button>
                   </CardFooter>

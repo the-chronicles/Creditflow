@@ -79,3 +79,13 @@ export const getLoanDetails = async (loanId) => {
     };
   }
 };
+
+export const getMyLoanById = async (id) => {
+  try {
+    const response = await api.get(`/loan/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching loan:', error);
+    throw error;
+  }
+};
