@@ -34,7 +34,7 @@ export const Layout = ({ children }: LayoutProps) => {
         <div className="flex-1 flex flex-col">
           <header className="h-14 border-b flex items-center px-4 sm:px-6 bg-background">
             <SidebarTrigger className="mr-2" />
-            <h1 className="text-lg font-medium">CreditFlow</h1>
+            <h1 className="text-lg font-medium">Fintaza Bank</h1>
             <div className="ml-auto flex items-center gap-4">
               <Button 
                 variant="ghost" 
@@ -101,7 +101,7 @@ function AppSidebar({ onLogout, username }: AppSidebarProps) {
     <Sidebar>
       <SidebarHeader className="py-6">
         <div className="flex flex-col items-center gap-2 px-3">
-          <h3 className="text-lg font-semibold tracking-tight">CreditFlow</h3>
+          <h3 className="text-lg font-semibold tracking-tight">Fintaza Bank</h3>
         </div>
       </SidebarHeader>
       <SidebarContent>

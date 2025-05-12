@@ -14,6 +14,7 @@ import Apply from "./pages/Apply";
 import Loans from "./pages/Loans";
 import Schedule from "./pages/Schedule";
 import NotFound from "./pages/NotFound";
+import LoanDetail from "./pages/LoanDetail";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/loan/:id" element={<LoanDetail />} />
             <Route 
               path="/payments" 
               element={
