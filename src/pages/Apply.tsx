@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -36,6 +36,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Checkbox } from '@/components/ui/checkbox';
 import { applyForLoan } from '@/api/loan';
+import axios from 'axios';
+
 
 const loanSchema = z.object({
   loanType: z.string().min(1, { message: 'Please select a loan type' }),
@@ -95,6 +97,26 @@ const Apply = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isMobile = useIsMobile();
+  const [interestRate, setInterestRate] = useState(0.089); // default fallback
+
+
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  axios.get('https://cash-flow-be.onrender.com/api/config', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(res => {
+    setInterestRate(res.data.interestRate / 100); // 8.9 → 0.089
+  })
+  .catch(err => {
+    console.error("Failed to fetch interest rate", err);
+  });
+}, []);
+
 
   const getInstallmentOptions = () => {
     if (paymentFrequency === 'weekly') {
@@ -289,7 +311,7 @@ const Apply = () => {
   const calculatePaymentAmount = () => {
     if (!installments || isNaN(installments)) return 0;
     
-    const totalWithInterest = amount * 1.089; // Simple interest calculation
+    const totalWithInterest = amount * (1 + interestRate);
     const paymentAmount = totalWithInterest / installments;
     return paymentAmount;
   };
@@ -921,7 +943,8 @@ const Apply = () => {
                     <div className="font-medium text-right">{installments || '-'}</div>
                     
                     <div className="text-muted-foreground">Interest Rate:</div>
-                    <div className="font-medium text-right">8.9%</div>
+                    <div className="font-medium text-right">{(interestRate * 100).toFixed(2)}%</div>
+
                     
                     <div className="text-muted-foreground">
                       {currentPaymentFrequency === 'weekly' ? 'Weekly' : 'Monthly'} Payment:
