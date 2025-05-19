@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getMyLoans } from "../api/loan";
+import { fetchLoanProducts } from "@/api/loan";
 
 interface Loan {
   id: string;
@@ -50,6 +51,7 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loanProducts, setLoanProducts] = useState([]);
 
   useEffect(() => {
     const fetchLoans = async () => {
@@ -66,6 +68,10 @@ const Dashboard = () => {
     };
 
     fetchLoans();
+  }, []);
+  
+  useEffect(() => {
+    fetchLoanProducts().then(setLoanProducts).catch(console.error);
   }, []);
 
   // Safe calculations with defaults
@@ -309,6 +315,33 @@ const Dashboard = () => {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="mt-8 space-y-4">
+          <h2 className="text-xl font-semibold tracking-tight mb-2">
+            Available Loan Products
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {loanProducts.map((product) => (
+              <Card key={product._id}>
+                <CardContent className="p-4 space-y-2">
+                  {product.logoUrl && (
+                    <img
+                      src={product.logoUrl}
+                      alt={product.productName}
+                      className="h-20 object-contain mx-auto"
+                    />
+                  )}
+                  <h3 className="text-lg font-semibold text-center">
+                    {product.productName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground text-center">
+                    {product.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </Layout>

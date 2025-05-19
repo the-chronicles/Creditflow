@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { api, apiFormData } from '../api';
 
 export const applyForLoan = async (formData, idFile) => {
@@ -89,3 +90,10 @@ export const getMyLoanById = async (id) => {
     throw error;
   }
 };
+
+
+export const fetchLoanProducts = async () => {
+  const res = await axios.get('https://cash-flow-be.onrender.com/api/loan-products');
+  return res.data;
+};
+
