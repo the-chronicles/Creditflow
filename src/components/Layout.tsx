@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -15,9 +14,20 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
-} from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { User, Home, CreditCard, FileText, Settings, LogOut, Wallet, Calendar } from 'lucide-react';
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import {
+  User,
+  Home,
+  CreditCard,
+  FileText,
+  Settings,
+  LogOut,
+  Wallet,
+  Calendar,
+} from "lucide-react";
+import NotificationBanner from "./ui/NotificationBanner";
+import NotificationDropdown from "./ui/Notificationdropdown";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,26 +40,26 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar onLogout={logout} username={user?.name || 'User'} />
+        <AppSidebar onLogout={logout} username={user?.name || "User"} />
         <div className="flex-1 flex flex-col">
           <header className="h-14 border-b flex items-center px-4 sm:px-6 bg-background">
             <SidebarTrigger className="mr-2" />
             <h1 className="text-lg font-medium">Fintaza Bank</h1>
             <div className="ml-auto flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+            {/* <NotificationBanner /> */}
+              <NotificationDropdown />
+              <Button
+                variant="ghost"
+                size="sm"
                 className="hidden md:flex gap-2 items-center"
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate("/profile")}
               >
                 <User className="h-4 w-4" />
                 <span>{user?.name}</span>
               </Button>
             </div>
           </header>
-          <main className="flex-1 p-4 sm:p-6 overflow-auto">
-            {children}
-          </main>
+          <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
         </div>
       </div>
     </SidebarProvider>
@@ -68,32 +78,32 @@ function AppSidebar({ onLogout, username }: AppSidebarProps) {
     {
       title: "Dashboard",
       icon: Home,
-      onClick: () => navigate('/dashboard')
+      onClick: () => navigate("/dashboard"),
     },
     {
       title: "My Loans",
       icon: CreditCard,
-      onClick: () => navigate('/loans')
+      onClick: () => navigate("/loans"),
     },
     {
       title: "Apply for Loan",
       icon: FileText,
-      onClick: () => navigate('/apply')
+      onClick: () => navigate("/apply"),
     },
     {
       title: "Payments",
       icon: Wallet,
-      onClick: () => navigate('/payments')
+      onClick: () => navigate("/payments"),
     },
     {
       title: "Schedule",
       icon: Calendar,
-      onClick: () => navigate('/schedule')
+      onClick: () => navigate("/schedule"),
     },
     {
       title: "Settings",
       icon: Settings,
-      onClick: () => navigate('/settings')
+      onClick: () => navigate("/settings"),
     },
   ];
 
@@ -125,9 +135,9 @@ function AppSidebar({ onLogout, username }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter>
         <div className="px-3">
-          <Button 
-            variant="ghost" 
-            className="w-full flex items-center gap-3 mb-2 bg-sidebar-accent hover:bg-sidebar-primary text-sidebar-foreground" 
+          <Button
+            variant="ghost"
+            className="w-full flex items-center gap-3 mb-2 bg-sidebar-accent hover:bg-sidebar-primary text-sidebar-foreground"
             onClick={onLogout}
           >
             <LogOut className="h-4 w-4" />

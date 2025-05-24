@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getMyLoans } from "../api/loan";
 import { fetchLoanProducts } from "@/api/loan";
+import { useLoanProductSocket } from "@/hooks/useLoanProductSocket";
 
 interface Loan {
   id: string;
@@ -69,10 +70,14 @@ const Dashboard = () => {
 
     fetchLoans();
   }, []);
-  
+
   useEffect(() => {
     fetchLoanProducts().then(setLoanProducts).catch(console.error);
   }, []);
+
+  useLoanProductSocket((deletedId) => {
+    setLoanProducts((prev) => prev.filter((p) => p._id !== deletedId));
+  });
 
   // Safe calculations with defaults
   const totalOutstanding =

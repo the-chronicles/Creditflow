@@ -54,6 +54,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { applyForLoan, fetchLoanProducts } from "@/api/loan";
 import axios from "axios";
+import { api } from "@/api";
 
 const loanSchema = z.object({
   loanType: z.string().min(1, { message: "Please select a loan type" }),
@@ -129,14 +130,15 @@ const Apply = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [paymentFrequency, setPaymentFrequency] = useState("monthly");
   const [idFile, setIdFile] = useState<File | null>(null);
-  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
-  const [showBankingInfo, setShowBankingInfo] = useState(false);
+  // const [showPersonalInfo, setShowPersonalInfo] = useState(false);
+  // const [showBankingInfo, setShowBankingInfo] = useState(false);
   const [useCameraMode, setUseCameraMode] = useState(false);
   const [directDepositRejected, setDirectDepositRejected] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isMobile = useIsMobile();
-  const [interestRate, setInterestRate] = useState(0.089); // default fallback
+  // const [interestRate, setInterestRate] = useState(0.089); // default fallback
+  const [interestRate, setInterestRate] = useState<number | null>(null);
   const [loanProducts, setLoanProducts] = useState([]);
 
   useEffect(() => {
@@ -146,17 +148,13 @@ const Apply = () => {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("userToken"); // ✅ fix here
     if (!token) return;
 
-    axios
-      .get("https://cash-flow-be.onrender.com/api/config", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+    api
+      .get("/config")
       .then((res) => {
-        setInterestRate(res.data.interestRate / 100); // 8.9 → 0.089
+        setInterestRate(res.data.interestRate); // Already in correct format
       })
       .catch((err) => {
         console.error("Failed to fetch interest rate", err);
@@ -203,6 +201,14 @@ const Apply = () => {
   const selectedProduct = loanProducts.find(
     (p) => p.productName === form.watch("loanType")
   );
+
+  useEffect(() => {
+    if (selectedProduct) {
+      const { minAmount, maxAmount } = selectedProduct;
+      setSliderValue([Math.max(minAmount, sliderValue[0])]);
+      form.setValue("amount", Math.max(minAmount, sliderValue[0]).toString());
+    }
+  }, [selectedProduct]);
 
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
@@ -594,8 +600,8 @@ const Apply = () => {
                             <Slider
                               value={sliderValue}
                               onValueChange={handleSliderChange}
-                              min={50}
-                              max={500}
+                              min={selectedProduct?.minAmount || 50}
+                              max={selectedProduct?.maxAmount || 500}
                               step={10}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
@@ -714,232 +720,191 @@ const Apply = () => {
 
                 <Separator />
 
-                {/* Personal Information Button */}
-                <div className="flex flex-col items-center justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full max-w-sm mb-2"
-                    onClick={() => setShowPersonalInfo(!showPersonalInfo)}
-                  >
-                    <IdCard className="mr-2" />
-                    {showPersonalInfo
-                      ? "Hide Personal Information"
-                      : "Input Personal Information"}
-                  </Button>
-                  <p className="text-sm text-muted-foreground">
-                    We need your personal information to verify your identity
-                  </p>
-                </div>
-
                 {/* Personal Information Section */}
-                {showPersonalInfo && (
-                  <div className="space-y-4 bg-muted/30 p-4 rounded-md border">
-                    <h3 className="text-lg font-medium">
-                      Personal Information
-                    </h3>
 
-                    <FormField
-                      control={form.control}
-                      name="socialSecurityNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Social Security Number</FormLabel>
+                <div className="space-y-4 bg-muted/30 p-4 rounded-md border">
+                  <h3 className="text-lg font-medium">Personal Information</h3>
+
+                  <FormField
+                    control={form.control}
+                    name="socialSecurityNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Social Security Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="XXX-XX-XXXX"
+                            {...field}
+                            maxLength={11}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Your SSN is securely encrypted and stored
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="idType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ID Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
-                            <Input
-                              placeholder="XXX-XX-XXXX"
-                              {...field}
-                              maxLength={11}
-                            />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select ID type" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormDescription>
-                            Your SSN is securely encrypted and stored
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                          <SelectContent>
+                            <SelectItem value="drivers_license">
+                              Driver's License
+                            </SelectItem>
+                            <SelectItem value="passport">Passport</SelectItem>
+                            <SelectItem value="state_id">State ID</SelectItem>
+                            <SelectItem value="military_id">
+                              Military ID
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="idType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ID Type</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
+                  <div className="space-y-2">
+                    <FormLabel>Upload ID Document</FormLabel>
+                    <div className="border border-dashed border-input rounded-md p-6">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Upload className="h-10 w-10 text-muted-foreground" />
+                        <p className="text-sm font-medium">
+                          {idFile
+                            ? idFile.name
+                            : "Drag & drop or click to upload"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Supports JPG, PNG, PDF up to 5MB
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                          <label
+                            htmlFor="id-upload"
+                            className="w-full sm:w-auto"
                           >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select ID type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="drivers_license">
-                                Driver's License
-                              </SelectItem>
-                              <SelectItem value="passport">Passport</SelectItem>
-                              <SelectItem value="state_id">State ID</SelectItem>
-                              <SelectItem value="military_id">
-                                Military ID
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <Button size="sm" variant="secondary" asChild>
+                              <span>Select File</span>
+                            </Button>
+                            <Input
+                              id="id-upload"
+                              type="file"
+                              className="hidden"
+                              accept="image/jpeg,image/png,application/pdf"
+                              onChange={handleFileChange}
+                            />
+                          </label>
 
-                    <div className="space-y-2">
-                      <FormLabel>Upload ID Document</FormLabel>
-                      <div className="border border-dashed border-input rounded-md p-6">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <Upload className="h-10 w-10 text-muted-foreground" />
-                          <p className="text-sm font-medium">
-                            {idFile
-                              ? idFile.name
-                              : "Drag & drop or click to upload"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Supports JPG, PNG, PDF up to 5MB
-                          </p>
-
-                          <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                            <label
-                              htmlFor="id-upload"
-                              className="w-full sm:w-auto"
+                          {isMobile && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              type="button"
+                              onClick={startCamera}
                             >
-                              <Button size="sm" variant="secondary" asChild>
-                                <span>Select File</span>
-                              </Button>
-                              <Input
-                                id="id-upload"
-                                type="file"
-                                className="hidden"
-                                accept="image/jpeg,image/png,application/pdf"
-                                onChange={handleFileChange}
-                              />
-                            </label>
-
-                            {isMobile && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                type="button"
-                                onClick={startCamera}
-                              >
-                                <Camera className="mr-2 h-4 w-4" />
-                                Take Photo
-                              </Button>
-                            )}
-                          </div>
+                              <Camera className="mr-2 h-4 w-4" />
+                              Take Photo
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
 
                 <Separator />
 
-                {/* Banking Information Button */}
-                <div className="flex flex-col items-center justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full max-w-sm mb-2"
-                    onClick={() => setShowBankingInfo(!showBankingInfo)}
-                  >
-                    <CreditCard className="mr-2" />
-                    {showBankingInfo
-                      ? "Hide Banking Information"
-                      : "Input Banking Information"}
-                  </Button>
-                  <p className="text-sm text-muted-foreground">
-                    We need your banking details for loan disbursement and
-                    payments
-                  </p>
-                </div>
-
                 {/* Banking Information Section */}
-                {showBankingInfo && (
-                  <div className="space-y-4 bg-muted/30 p-4 rounded-md border">
-                    <h3 className="text-lg font-medium">Banking Information</h3>
 
-                    <FormField
-                      control={form.control}
-                      name="accountType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Type</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select account type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="checking">
-                                Checking Account
-                              </SelectItem>
-                              <SelectItem value="savings">
-                                Savings Account
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="space-y-4 bg-muted/30 p-4 rounded-md border">
+                  <h3 className="text-lg font-medium">Banking Information</h3>
 
-                    <FormField
-                      control={form.control}
-                      name="routingNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Routing Number</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="accountType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
-                            <Input
-                              placeholder="9-digit routing number"
-                              {...field}
-                              maxLength={9}
-                              type="password"
-                            />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select account type" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormDescription>
-                            The 9-digit number on the bottom left of your check
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                          <SelectContent>
+                            <SelectItem value="checking">
+                              Checking Account
+                            </SelectItem>
+                            <SelectItem value="savings">
+                              Savings Account
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="accountNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Number</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Your account number"
-                              {...field}
-                              maxLength={17}
-                              type="password"
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Your account number is securely encrypted
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
+                  <FormField
+                    control={form.control}
+                    name="routingNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Routing Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="9-digit routing number"
+                            {...field}
+                            maxLength={9}
+                            type="password"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          The 9-digit number on the bottom left of your check
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="accountNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Account Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Your account number"
+                            {...field}
+                            maxLength={17}
+                            type="password"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Your account number is securely encrypted
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <Separator />
 
